@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>le nœud — 목공 계산기</title>
+<meta name="theme-color" content="#121110">
+<meta name="description" content="현장에서 바로 쓰는 목공 계산기 9종">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="le nœud">
+<style>
+:root{
+  --bg:#121110; --surface:#1c1a17; --field:#171512;
+  --ink:#f5f2ec; --muted:#a49b8c;
+  --accent:#d9a05e; --accent-deep:#b8763c; --btn-ink:#171008;
+  --line:rgba(245,242,236,.14); --line-strong:rgba(245,242,236,.28);
+  --track:rgba(245,242,236,.12); --warn:#c96a52; --good:#7fa86a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:16px; line-height:1.5; -webkit-text-size-adjust:100%;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+button,input,select{font-family:inherit;border-radius:0}
+.wrap{max-width:540px;margin:0 auto;padding:0 16px 48px}
+
+/* ── 설치 화면 ───────────────────────────────── */
+#install{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:32px 24px calc(32px + env(safe-area-inset-bottom));text-align:center}
+#install[hidden]{display:none}
+.ins-mark{width:104px;height:104px;margin-bottom:26px}
+.ins-brand{font-size:13px;letter-spacing:.34em;color:var(--accent);margin:0 0 10px;text-transform:uppercase}
+.ins-title{font-size:27px;font-weight:700;margin:0 0 10px;letter-spacing:-.01em}
+.ins-sub{font-size:14.5px;color:var(--muted);margin:0 0 34px;line-height:1.65}
+.ins-actions{width:100%;max-width:340px}
+.ins-hint{font-size:13px;color:var(--muted);line-height:1.7;margin:18px 0 0;
+  border:1px solid var(--line);padding:14px 16px;text-align:left;background:var(--surface)}
+.ins-hint[hidden]{display:none}
+.ins-hint b{color:var(--ink);font-weight:600}
+
+/* ── 공통 버튼 ───────────────────────────────── */
+.btn{display:block;width:100%;height:58px;font-size:17px;font-weight:600;border:none;cursor:pointer}
+.btn-primary{background:var(--accent);color:var(--btn-ink)}
+.btn-primary:active{background:var(--accent-deep)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);height:52px;font-size:15px;margin-top:10px}
+.btn-ghost:active{border-color:var(--line-strong);color:var(--ink)}
+
+/* ── 앱바 ────────────────────────────────────── */
+#bar{position:sticky;top:0;z-index:60;background:rgba(18,17,16,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.bar-in{max-width:540px;margin:0 auto;height:58px;display:flex;align-items:center;gap:12px;padding:0 10px 0 6px}
+#back{width:46px;height:46px;background:none;border:none;color:var(--ink);font-size:24px;cursor:pointer;line-height:1}
+#back[hidden]{display:none}
+#bar .ttl{font-size:16.5px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:6px}
+#bar .logo{font-size:15px;letter-spacing:.22em;color:var(--accent);padding-left:12px;text-transform:uppercase}
+
+/* ── 홈 ─────────────────────────────────────── */
+.hero{padding:26px 0 22px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.hero h1{font-size:23px;font-weight:700;margin:0 0 7px;letter-spacing:-.01em}
+.hero p{margin:0;font-size:14px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);padding:16px 14px 15px;min-height:118px;
+  display:flex;flex-direction:column;text-align:left;color:var(--ink);cursor:pointer;font-family:inherit}
+.tile:active{border-color:var(--accent);background:#211e1a}
+.tile .ic{height:26px;margin-bottom:auto;color:var(--accent)}
+.tile .ic svg{display:block}
+.tile .t{font-size:15.5px;font-weight:600;margin-top:14px;letter-spacing:-.01em}
+.tile .d{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.foot{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);text-align:center;line-height:1.8}
+
+/* ── 도구 화면 ───────────────────────────────── */
+.view{display:none;padding-top:20px}
+.view.on{display:block}
+.lead{font-size:13.5px;color:var(--muted);margin:0 0 20px;line-height:1.6}
+.field{margin-bottom:13px}
+.field>label{display:block;font-size:13px;color:var(--muted);margin-bottom:7px;font-weight:500}
+input[type=text],input[type=number],select{
+  width:100%;height:56px;background:var(--field);border:1px solid var(--line);color:var(--ink);
+  font-size:19px;padding:0 14px;appearance:none;-webkit-appearance:none}
+input::placeholder{color:#5f574c}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 20px) 25px,calc(100% - 14px) 25px;background-size:6px 6px,6px 6px;background-repeat:no-repeat;padding-right:40px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.suffix{position:relative}
+.suffix span{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none}
+.suffix input{padding-right:48px}
+.chk{display:flex;align-items:center;gap:11px;padding:15px 14px;background:var(--field);border:1px solid var(--line);cursor:pointer;margin-bottom:13px}
+.chk input{width:22px;height:22px;accent-color:var(--accent);margin:0;flex:none}
+.chk span{font-size:15px}
+.sec{font-size:12px;letter-spacing:.14em;color:var(--accent);margin:26px 0 12px;text-transform:uppercase;font-weight:600}
+
+/* 결과 */
+.res{background:var(--surface);border:1px solid var(--line-strong);padding:18px 16px;margin-top:20px}
+.res .hl{font-size:12px;letter-spacing:.12em;color:var(--muted);margin-bottom:6px;text-transform:uppercase}
+.res .big{font-size:34px;font-weight:700;color:var(--accent);line-height:1.15;letter-spacing:-.02em;word-break:keep-all}
+.res .big small{font-size:17px;font-weight:600;margin-left:3px}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--muted);font-size:14px;flex:none}
+.kv .v{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.kvs{margin-top:14px;padding-top:6px;border-top:1px solid var(--line)}
+.kv .v.acc{color:var(--accent)}
+.kv .v.warn{color:var(--warn)}
+.kv .v.good{color:var(--good)}
+.note{font-size:12.5px;color:var(--muted);line-height:1.7;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.err{color:var(--warn);font-size:14px;padding:14px;border:1px solid var(--warn);margin-top:16px}
+.err[hidden]{display:none}
+.badge{display:inline-block;font-size:11.5px;padding:3px 8px;border:1px solid var(--line-strong);color:var(--muted);margin-left:6px}
+.badge.ok{color:var(--good);border-color:var(--good)}
+.badge.no{color:var(--warn);border-color:var(--warn)}
+
+/* 가변 행 */
+.rows{margin-bottom:10px}
+.rrow{display:grid;gap:6px;margin-bottom:8px;align-items:center}
+.rrow.c4{grid-template-columns:1fr 1fr .74fr 46px}
+.rrow.c3{grid-template-columns:1fr .74fr 46px}
+.rrow.c3t{grid-template-columns:1.5fr .8fr 1.1fr 46px}
+.rrow input{height:52px;font-size:16px;padding:0 10px}
+.rdel{height:52px;background:var(--field);border:1px solid var(--line);color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+.rdel:active{color:var(--warn);border-color:var(--warn)}
+.rhead{display:grid;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:6px;padding:0 2px}
+.badd{width:100%;height:48px;background:transparent;border:1px dashed var(--line-strong);color:var(--accent);font-size:14.5px;font-weight:600;cursor:pointer}
+.badd:active{background:var(--surface)}
+
+/* 도면 */
+.sheetbox{margin-top:16px}
+.sheetbox h4{font-size:13.5px;margin:0 0 10px;color:var(--ink);font-weight:600}
+.svgwrap{background:#0d0c0b;border:1px solid var(--line);padding:10px;text-align:center;overflow:hidden}
+.svgwrap svg{max-width:100%;max-height:52vh;width:auto;height:auto;display:inline-block}
+.steps{list-style:none;margin:12px 0 0;padding:0;counter-reset:s}
+.steps li{position:relative;padding:9px 0 9px 32px;font-size:13.5px;border-bottom:1px solid var(--line);color:var(--muted);line-height:1.5}
+.steps li:last-child{border-bottom:none}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:9px;width:21px;height:21px;
+  border:1px solid var(--accent);color:var(--accent);font-size:11px;display:flex;align-items:center;justify-content:center}
+.steps li b{color:var(--ink);font-weight:600}
+
+/* 삼각형 도해 */
+.diagram{background:#0d0c0b;border:1px solid var(--line);padding:14px;margin-top:16px;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+
+/* 환산표 */
+.utab{width:100%;border-collapse:collapse;margin-top:6px}
+.utab td{padding:12px 4px;border-bottom:1px solid var(--line);font-size:16px}
+.utab td:first-child{color:var(--muted);font-size:14px;width:34%}
+.utab td:last-child{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.utab tr:last-child td{border-bottom:none}
+.copy{margin-top:12px;height:50px;width:100%;background:transparent;border:1px solid var(--line-strong);color:var(--ink);font-size:14.5px;font-weight:600;cursor:pointer}
+.copy:active{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+
+<!-- ══ 설치 화면 ══ -->
+<div id="install" hidden>
+  <svg class="ins-mark" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+    <path d="M12 82 L12 18 L82 82 Z" stroke="#d9a05e" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M12 62 L28 62 M12 46 L38 46 M12 30 L50 30" stroke="#d9a05e" stroke-width="2.6" opacity=".55"/>
+    <path d="M24 82 L24 70 M40 82 L40 70 M56 82 L56 70" stroke="#d9a05e" stroke-width="2.6" opacity=".55"/>
+  </svg>
+  <p class="ins-brand">le nœud</p>
+  <h1 class="ins-title">목공 계산기</h1>
+  <p class="ins-sub">삼각형 · 재단 · 합판 · 각재 · 페인트<br>계단 · 일당 · 견적 · 단위환산 &nbsp;9종<br><span style="color:var(--accent)">설치하면 인터넷 없이도 열립니다</span></p>
+  <div class="ins-actions">
+    <button class="btn btn-primary" id="btnInstall">홈 화면에 설치하기</button>
+    <button class="btn-ghost" id="btnSkip">설치 없이 바로 쓰기</button>
+    <p class="ins-hint" id="insHint" hidden></p>
+  </div>
+</div>
+
+<!-- ══ 앱바 ══ -->
+<header id="bar">
+  <div class="bar-in">
+    <button id="back" hidden aria-label="뒤로">‹</button>
+    <div class="logo" id="barLogo">le nœud</div>
+    <div class="ttl" id="barTitle" hidden></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ══ 홈 ══ -->
+<section class="view on" id="v-home">
+  <div class="hero">
+    <h1>현장에서 바로 쓰는 계산기</h1>
+    <p>쓸 도구를 고르세요 · 값 넣으면 바로 계산됩니다</p>
+  </div>
+  <div class="grid" id="tiles"></div>
+  <p class="foot">le nœud · 목수 최웅빈<br>1자=303.03mm · 1치=30.303mm · 1인치=25.4mm</p>
+</section>
+
+<!-- ══ 1. 삼각형 ══ -->
+<section class="view" id="v-tri">
+  <p class="lead">밑변 · 높이 · 빗변 · 각도 중 <b style="color:var(--ink)">2개만</b> 넣으면 나머지가 자동으로 나옵니다. 마지막에 입력한 2개를 기준으로 계산해요.</p>
+  <div class="r2">
+    <div class="field"><label>밑변 (mm)</label><input id="tri-b" type="text" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>높이 (mm)</label><input id="tri-h" type="text" inputmode="decimal" placeholder="0"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>빗변 (mm)</label><input id="tri-c" type="text" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>각도 (도)</label><input id="tri-a" type="text" inputmode="decimal" placeholder="0"></div>
+  </div>
+  <button class="btn-ghost" id="tri-clear" style="margin-top:2px">모두 지우기</button>
+  <div class="err" id="tri-err" hidden></div>
+  <div class="diagram" id="tri-dia" hidden></div>
+  <div class="res" id="tri-res" hidden></div>
+</section>
+
+<!-- ══ 2. 재단 최적화 ══ -->
+<section class="view" id="v-cut">
+  <p class="lead">원판 크기와 부재 목록을 넣으면 배치도 · 톱질 순서 · 자투리를 계산합니다.</p>
+  <div class="field"><label>원판 규격</label>
+    <select id="cut-spec">
+      <option value="1220x2440">합판 4×8 (1220 × 2440)</option>
+      <option value="910x1820">합판 3×6 (910 × 1820)</option>
+      <option value="910x2130">합판 3×7 (910 × 2130)</option>
+      <option value="910x2440">합판 3×8 (910 × 2440)</option>
+      <option value="1220x1820">합판 4×6 (1220 × 1820)</option>
+      <option value="600x2400">집성판 (600 × 2400)</option>
+      <option value="custom">직접 입력</option>
+    </select>
+  </div>
+  <div class="r2">
+    <div class="field"><label>원판 가로 (mm)</label><input id="cut-W" type="text" inputmode="decimal" value="1220"></div>
+    <div class="field"><label>원판 세로 (mm)</label><input id="cut-H" type="text" inputmode="decimal" value="2440"></div>
+  </div>
+  <div class="field"><label>톱날 두께 (mm)</label><input id="cut-k" type="text" inputmode="decimal" value="3"></div>
+  <label class="chk"><input type="checkbox" id="cut-rot"><span>부재 90° 회전 허용 (결 방향 무시)</span></label>
+
+  <div class="sec">자를 부재 목록</div>
+  <div class="rhead" style="grid-template-columns:1fr 1fr .74fr 46px"><div>가로 mm</div><div>세로 mm</div><div>개수</div><div></div></div>
+  <div class="rows" id="cut-rows"></div>
+  <button class="badd" id="cut-add">+ 부재 추가</button>
+  <div class="err" id="cut-err" hidden></div>
+  <div class="res" id="cut-res" hidden></div>
+  <div id="cut-sheets"></div>
+</section>
+
+<!-- ══ 3. 합판 장수 ══ -->
+<section class="view" id="v-ply">
+  <p class="lead">필요한 크기와 개수를 넣으면 합판을 몇 장 사야 하는지 알려줍니다.</p>
+  <div class="field"><label>합판 규격</label>
+    <select id="ply-spec">
+      <option value="1220x2440">4×8 (1220 × 2440)</option>
+      <option value="910x1820">3×6 (910 × 1820)</option>
+      <option value="910x2130">3×7 (910 × 2130)</option>
+      <option value="910x2440">3×8 (910 × 2440)</option>
+      <option value="1220x1820">4×6 (1220 × 1820)</option>
+      <option value="custom">직접 입력</option>
+    </select>
+  </div>
+  <div class="r2">
+    <div class="field"><label>합판 가로 (mm)</label><input id="ply-W" type="text" inputmode="decimal" value="1220"></div>
+    <div class="field"><label>합판 세로 (mm)</label><input id="ply-H" type="text" inputmode="decimal" value="2440"></div>
+  </div>
+  <div class="sec">필요한 부재</div>
+  <div class="r2">
+    <div class="field"><label>부재 가로 (mm)</label><input id="ply-w" type="text" inputmode="decimal" placeholder="600"></div>
+    <div class="field"><label>부재 세로 (mm)</label><input id="ply-h" type="text" inputmode="decimal" placeholder="400"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>필요 개수</label><input id="ply-q" type="text" inputmode="numeric" placeholder="10"></div>
+    <div class="field"><label>톱날 두께 (mm)</label><input id="ply-k" type="text" inputmode="decimal" value="3"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>여유율 (%)</label><input id="ply-m" type="text" inputmode="decimal" value="10"></div>
+    <div class="field"><label>합판 1장 단가 (원)</label><input id="ply-p" type="text" inputmode="numeric" placeholder="선택"></div>
+  </div>
+  <label class="chk"><input type="checkbox" id="ply-rot" checked><span>부재 90° 회전 허용 (결 방향 무시)</span></label>
+  <div class="err" id="ply-err" hidden></div>
+  <div class="res" id="ply-res" hidden></div>
+  <div id="ply-dia"></div>
+</section>
+
+<!-- ══ 4. 각재 자르기 ══ -->
+<section class="view" id="v-bar">
+  <p class="lead">각재 한 개에서 몇 토막이 나오고, 자투리가 얼마나 남는지 계산합니다.</p>
+  <div class="r2">
+    <div class="field"><label>각재 1개 길이 (mm)</label><input id="bar-L" type="text" inputmode="decimal" value="3600"></div>
+    <div class="field"><label>톱날 두께 (mm)</label><input id="bar-k" type="text" inputmode="decimal" value="3"></div>
+  </div>
+  <div class="sec">필요한 토막</div>
+  <div class="rhead" style="grid-template-columns:1fr .74fr 46px"><div>토막 길이 mm</div><div>개수</div><div></div></div>
+  <div class="rows" id="bar-rows"></div>
+  <button class="badd" id="bar-add">+ 토막 추가</button>
+  <div class="err" id="bar-err" hidden></div>
+  <div class="res" id="bar-res" hidden></div>
+  <div id="bar-plan"></div>
+</section>
+
+<!-- ══ 5. 페인트 ══ -->
+<section class="view" id="v-paint">
+  <p class="lead">벽 크기와 칠할 횟수를 넣으면 필요한 페인트 양과 통 수가 나옵니다.</p>
+  <div class="r2">
+    <div class="field"><label>벽 가로 (m)</label><input id="pt-w" type="text" inputmode="decimal" placeholder="3.6"></div>
+    <div class="field"><label>벽 세로 (m)</label><input id="pt-h" type="text" inputmode="decimal" placeholder="2.4"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>벽 개수 (면)</label><input id="pt-n" type="text" inputmode="numeric" value="1"></div>
+    <div class="field"><label>제외 면적 (㎡)</label><input id="pt-x" type="text" inputmode="decimal" placeholder="문·창 0"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>칠할 횟수</label><input id="pt-c" type="text" inputmode="numeric" value="2"></div>
+    <div class="field"><label>도포량 (㎡/L)</label><input id="pt-e" type="text" inputmode="decimal" value="9"></div>
+  </div>
+  <div class="field"><label>페인트 통 용량</label>
+    <select id="pt-can">
+      <option value="1">1 L (소용량)</option>
+      <option value="4" selected>4 L (갤런)</option>
+      <option value="10">10 L</option>
+      <option value="18">18 L (말통)</option>
+    </select>
+  </div>
+  <div class="field"><label>통 단가 (원)</label><input id="pt-p" type="text" inputmode="numeric" placeholder="선택"></div>
+  <div class="res" id="pt-res" hidden></div>
+</section>
+
+<!-- ══ 6. 계단 ══ -->
+<section class="view" id="v-stair">
+  <p class="lead">층 높이와 단 수를 넣으면 한 단 높이 · 디딤판 치수 · 경사각이 나옵니다.</p>
+  <div class="field"><label>층 높이 — 바닥에서 바닥까지 (mm)</label><input id="st-H" type="text" inputmode="decimal" placeholder="2700"></div>
+  <div class="r2">
+    <div class="field"><label>단 수 (챌판 수)</label><input id="st-n" type="text" inputmode="numeric" placeholder="자동"></div>
+    <div class="field"><label>디딤판 나비 (mm)</label><input id="st-g" type="text" inputmode="decimal" placeholder="자동"></div>
+  </div>
+  <div class="err" id="st-err" hidden></div>
+  <div class="res" id="st-res" hidden></div>
+  <div class="diagram" id="st-dia" hidden></div>
+</section>
+
+<!-- ══ 7. 일당 정산 ══ -->
+<section class="view" id="v-pay">
+  <p class="lead">일당과 공수를 넣으면 공제 뒤 실수령액이 나옵니다.</p>
+  <div class="r2">
+    <div class="field"><label>일당 (원)</label><input id="pay-d" type="text" inputmode="numeric" placeholder="180000"></div>
+    <div class="field"><label>공수 (일)</label><input id="pay-n" type="text" inputmode="decimal" placeholder="22"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>추가 수당 (원)</label><input id="pay-x" type="text" inputmode="numeric" placeholder="유류비 등"></div>
+    <div class="field"><label>기타 공제 (원)</label><input id="pay-m" type="text" inputmode="numeric" placeholder="0"></div>
+  </div>
+  <label class="chk"><input type="checkbox" id="pay-t33" checked><span>사업소득세 3.3% 공제</span></label>
+  <div class="field"><label>공제율 직접 입력 (%)</label><input id="pay-rate" type="text" inputmode="decimal" value="3.3"></div>
+  <div class="res" id="pay-res" hidden></div>
+</section>
+
+<!-- ══ 8. 자재비 견적 ══ -->
+<section class="view" id="v-est">
+  <p class="lead">자재 · 수량 · 단가를 넣으면 부가세 포함 합계가 나옵니다.</p>
+  <div class="rhead" style="grid-template-columns:1.5fr .8fr 1.1fr 46px"><div>품목</div><div>수량</div><div>단가 원</div><div></div></div>
+  <div class="rows" id="est-rows"></div>
+  <button class="badd" id="est-add">+ 품목 추가</button>
+  <div class="sec">추가 항목</div>
+  <div class="r2">
+    <div class="field"><label>운반비 (원)</label><input id="est-ship" type="text" inputmode="numeric" placeholder="0"></div>
+    <div class="field"><label>할인 (원)</label><input id="est-disc" type="text" inputmode="numeric" placeholder="0"></div>
+  </div>
+  <label class="chk"><input type="checkbox" id="est-vat" checked><span>부가세 10% 포함</span></label>
+  <div class="res" id="est-res" hidden></div>
+  <button class="copy" id="est-copy" hidden>견적 내용 복사하기</button>
+</section>
+
+<!-- ══ 9. 단위 환산 ══ -->
+<section class="view" id="v-unit">
+  <p class="lead">값 하나를 넣으면 모든 단위로 한 번에 바뀝니다.</p>
+  <div class="field"><label>값</label><input id="un-v" type="text" inputmode="decimal" placeholder="1000"></div>
+  <div class="field"><label>단위</label>
+    <select id="un-u">
+      <option value="mm" selected>밀리미터 (mm)</option>
+      <option value="cm">센티미터 (cm)</option>
+      <option value="m">미터 (m)</option>
+      <option value="ja">자 · 척 (303.03mm)</option>
+      <option value="chi">치 · 촌 (30.303mm)</option>
+      <option value="pun">푼 (3.0303mm)</option>
+      <option value="in">인치 (25.4mm)</option>
+      <option value="ft">피트 (304.8mm)</option>
+    </select>
+  </div>
+  <div class="res" id="un-res" hidden></div>
+  <div class="res" id="un-ref">
+    <div class="hl">자주 쓰는 값</div>
+    <div class="kv"><span class="k">1자 (척)</span><span class="v">303.03 mm</span></div>
+    <div class="kv"><span class="k">1치 (촌) = 1/10자</span><span class="v">30.303 mm</span></div>
+    <div class="kv"><span class="k">1푼 = 1/10치</span><span class="v">3.0303 mm</span></div>
+    <div class="kv"><span class="k">1인치</span><span class="v">25.4 mm</span></div>
+    <div class="kv"><span class="k">1피트 = 12인치</span><span class="v">304.8 mm</span></div>
+    <div class="kv"><span class="k">합판 3×6 = 3자×6자</span><span class="v">910 × 1820 mm</span></div>
+    <div class="kv"><span class="k">합판 4×8 = 4자×8자</span><span class="v">1220 × 2440 mm</span></div>
+  </div>
+</section>
+
+</div><!-- /wrap -->
+
+<script>
+"use strict";
+/* ═══ 유틸 ═══ */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.prototype.slice.call(r.querySelectorAll(s));
+const num=v=>{const n=parseFloat(String(v==null?"":v).replace(/[,\s]/g,""));return isFinite(n)?n:NaN;};
+const fmt=(n,d=1)=>isFinite(n)?(Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toLocaleString("ko-KR",{maximumFractionDigits:d}):"–";
+const won=n=>isFinite(n)?Math.round(n).toLocaleString("ko-KR"):"–";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const kv=(k,v,cls="")=>`<div class="kv"><span class="k">${k}</span><span class="v ${cls}">${v}</span></div>`;
+const show=(el,on)=>{el.hidden=!on;};
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+
+/* ═══ 도구 목록 ═══ */
+const ICON={
+  tri:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><path d="M3 23V3l20 20H3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+  cut:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><rect x="3" y="3" width="24" height="20" stroke="currentColor" stroke-width="2"/><path d="M3 13h24M15 3v10" stroke="currentColor" stroke-width="2"/></svg>',
+  ply:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><rect x="3" y="7" width="20" height="16" stroke="currentColor" stroke-width="2"/><path d="M7 7V3h20v16h-4" stroke="currentColor" stroke-width="2"/></svg>',
+  bar:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><rect x="2" y="9" width="26" height="8" stroke="currentColor" stroke-width="2"/><path d="M11 6v14M20 6v14" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"/></svg>',
+  paint:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><rect x="6" y="9" width="14" height="14" stroke="currentColor" stroke-width="2"/><path d="M6 9c0-3.3 3.1-6 7-6s7 2.7 7 6M24 5v8" stroke="currentColor" stroke-width="2"/></svg>',
+  stair:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><path d="M2 23h7v-6h7v-6h7V5h5" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+  pay:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><rect x="2" y="5" width="26" height="16" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="13" r="4" stroke="currentColor" stroke-width="2"/></svg>',
+  est:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><rect x="5" y="2" width="20" height="22" stroke="currentColor" stroke-width="2"/><path d="M10 9h10M10 14h10M10 19h6" stroke="currentColor" stroke-width="2"/></svg>',
+  unit:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><rect x="2" y="8" width="26" height="10" stroke="currentColor" stroke-width="2"/><path d="M8 8v4M14 8v6M20 8v4" stroke="currentColor" stroke-width="2"/></svg>'
+};
+const TOOLS=[
+  {id:"tri",  t:"목수 삼각형",  d:"밑변·높이·빗변·각도<br>경사도·물매까지"},
+  {id:"cut",  t:"재단 최적화",  d:"배치도·톱질 순서<br>자투리 계산"},
+  {id:"ply",  t:"합판 장수",    d:"몇 장 사야 하나<br>금액까지"},
+  {id:"bar",  t:"각재 자르기",  d:"몇 토막 나오고<br>몇 mm 남나"},
+  {id:"paint",t:"페인트 양",    d:"면적·리터<br>몇 통 필요한가"},
+  {id:"stair",t:"계단 계산",    d:"단 높이·디딤판<br>경사각 적정성"},
+  {id:"pay",  t:"일당 정산",    d:"공수·공제<br>실수령액"},
+  {id:"est",  t:"자재비 견적",  d:"수량·단가<br>부가세 포함 합계"},
+  {id:"unit", t:"단위 환산",    d:"자·치·푼·mm<br>인치·피트"}
+];
+
+/* ═══ 라우팅 ═══ */
+$("#tiles").innerHTML=TOOLS.map(x=>
+  `<button class="tile" data-go="${x.id}"><span class="ic">${ICON[x.id]}</span><span class="t">${x.t}</span><span class="d">${x.d}</span></button>`
+).join("");
+$("#tiles").addEventListener("click",e=>{
+  const b=e.target.closest("[data-go]"); if(b) location.hash="#/"+b.dataset.go;
+});
+$("#back").addEventListener("click",()=>{ if(history.length>1) history.back(); else location.hash="#/home"; });
+
+function route(){
+  const id=(location.hash.replace(/^#\/?/,"")||"home").split("?")[0];
+  const target=$("#v-"+id)?id:"home";
+  $$(".view").forEach(v=>v.classList.remove("on"));
+  $("#v-"+target).classList.add("on");
+  const isHome=target==="home";
+  show($("#back"),!isHome); show($("#barLogo"),isHome); show($("#barTitle"),!isHome);
+  if(!isHome){const tool=TOOLS.find(x=>x.id===target); $("#barTitle").textContent=tool?tool.t+" 계산기":"";}
+  document.title=isHome?"le nœud — 목공 계산기":($("#barTitle").textContent+" · le nœud");
+  window.scrollTo(0,0);
+}
+addEventListener("hashchange",route);
+
+/* ═══ 입력값 저장 ═══ */
+const SK="lenoeud.v1.";
+function restore(){
+  $$("input[id],select[id]").forEach(el=>{
+    const v=localStorage.getItem(SK+el.id); if(v===null) return;
+    if(el.type==="checkbox") el.checked=(v==="1"); else el.value=v;
+  });
+}
+document.addEventListener("input",e=>{
+  const el=e.target; if(!el.id||!/^(INPUT|SELECT)$/.test(el.tagName)) return;
+  try{localStorage.setItem(SK+el.id, el.type==="checkbox"?(el.checked?"1":"0"):el.value);}catch(_){}
+},true);
+document.addEventListener("change",e=>{
+  const el=e.target; if(!el.id||el.type!=="checkbox") return;
+  try{localStorage.setItem(SK+el.id, el.checked?"1":"0");}catch(_){}
+},true);
+
+/* ═══ 가변 행 헬퍼 ═══ */
+function rows(wrapSel,addSel,cls,tpl,onChange,init){
+  const wrap=$(wrapSel);
+  function add(){
+    const d=document.createElement("div"); d.className="rrow "+cls; d.innerHTML=tpl;
+    d.querySelector(".rdel").addEventListener("click",()=>{
+      if($$(".rrow",wrap).length>1) d.remove(); else $$("input",d).forEach(i=>{if(!i.dataset.keep)i.value="";});
+      onChange();
+    });
+    wrap.appendChild(d); onChange();
+  }
+  $(addSel).addEventListener("click",add);
+  wrap.addEventListener("input",onChange);
+  for(let i=0;i<(init||1);i++) add();
+}
+
+/* ══════════ 1. 삼각형 ══════════ */
+(function(){
+  const F={b:$("#tri-b"),h:$("#tri-h"),c:$("#tri-c"),a:$("#tri-a")};
+  const order=[]; const res=$("#tri-res"),err=$("#tri-err"),dia=$("#tri-dia");
+  Object.keys(F).forEach(k=>F[k].addEventListener("input",()=>{
+    const i=order.indexOf(k); if(i>-1) order.splice(i,1); order.unshift(k); calc();
+  }));
+  $("#tri-clear").addEventListener("click",()=>{
+    Object.keys(F).forEach(k=>{F[k].value="";try{localStorage.removeItem(SK+F[k].id);}catch(_){}});
+    order.length=0; calc();
+  });
+  function calc(){
+    const v={}; Object.keys(F).forEach(k=>v[k]=num(F[k].value));
+    const live=order.filter(k=>isFinite(v[k])&&v[k]>0);
+    const extra=Object.keys(F).filter(k=>isFinite(v[k])&&v[k]>0&&order.indexOf(k)<0);
+    const pick=live.concat(extra).slice(0,2);
+    if(pick.length<2){show(res,0);show(dia,0);show(err,0);return;}
+    let b=NaN,h=NaN,c=NaN,a=NaN,bad="";
+    const key=pick.slice().sort().join("");
+    const B=v.b,H=v.h,C=v.c,A=v.a;
+    if(pick.indexOf("a")>-1&&!(A>0&&A<90)) bad="각도는 0°보다 크고 90°보다 작아야 합니다.";
+    if(!bad) switch(key){
+      case "bh": b=B;h=H;c=Math.hypot(b,h);a=deg(Math.atan2(h,b));break;
+      case "bc": if(C<=B){bad="빗변은 밑변보다 길어야 합니다.";break;} b=B;c=C;h=Math.sqrt(c*c-b*b);a=deg(Math.acos(b/c));break;
+      case "ab": b=B;a=A;h=b*Math.tan(rad(a));c=b/Math.cos(rad(a));break;
+      case "ch": if(C<=H){bad="빗변은 높이보다 길어야 합니다.";break;} h=H;c=C;b=Math.sqrt(c*c-h*h);a=deg(Math.asin(h/c));break;
+      case "ah": h=H;a=A;b=h/Math.tan(rad(a));c=h/Math.sin(rad(a));break;
+      case "ac": c=C;a=A;b=c*Math.cos(rad(a));h=c*Math.sin(rad(a));break;
+      default: bad="계산할 수 없는 조합입니다.";
+    }
+    if(bad){err.textContent=bad;show(err,1);show(res,0);show(dia,0);return;}
+    show(err,0);
+    const slope=h/b*100, mulmae=h/b*10, ratio=b/h;
+    const used=pick.map(k=>({b:"밑변",h:"높이",c:"빗변",a:"각도"}[k])).join(" + ");
+    res.innerHTML=
+      `<div class="hl">${used} 기준</div>`+
+      `<div class="big">${fmt(a,2)}<small>°</small></div>`+
+      `<div class="kvs">`+
+      kv("밑변",fmt(b,1)+" mm",pick.indexOf("b")>-1?"":"acc")+
+      kv("높이",fmt(h,1)+" mm",pick.indexOf("h")>-1?"":"acc")+
+      kv("빗변",fmt(c,1)+" mm",pick.indexOf("c")>-1?"":"acc")+
+      kv("반대쪽 각",fmt(90-a,2)+"°")+
+      `</div><div class="kvs">`+
+      kv("경사도",fmt(slope,1)+" %")+
+      kv("물매",fmt(mulmae,2)+" 치 물매")+
+      kv("기울기 비",isFinite(ratio)?"1 : "+fmt(ratio,2)+" (높이:밑변)":"–")+
+      kv("면적",fmt(b*h/2/1e6,3)+" ㎡")+
+      `</div><div class="note">물매는 밑변 1자(10치)당 올라가는 높이(치)입니다. 4치 물매 = 밑변 300mm에 높이 120mm.</div>`;
+    show(res,1);
+    // 도해
+    const W=300,Hh=190,pad=26;
+    const s=Math.min((W-pad*2)/b,(Hh-pad*2)/h);
+    const bx=b*s, hy=h*s, x0=pad, y0=Hh-pad;
+    dia.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}">
+      <polygon points="${x0},${y0} ${x0+bx},${y0} ${x0},${y0-hy}" fill="rgba(217,160,94,.13)" stroke="#d9a05e" stroke-width="2"/>
+      <path d="M${x0} ${y0-13} h13 v13" fill="none" stroke="#a49b8c" stroke-width="1.4"/>
+      <text x="${x0+bx/2}" y="${y0+16}" fill="#a49b8c" font-size="11" text-anchor="middle">밑변 ${fmt(b,0)}</text>
+      <text x="${x0-8}" y="${y0-hy/2}" fill="#a49b8c" font-size="11" text-anchor="end" transform="rotate(-90 ${x0-8} ${y0-hy/2})">높이 ${fmt(h,0)}</text>
+      <text x="${x0+bx/2+12}" y="${y0-hy/2-4}" fill="#d9a05e" font-size="11">빗변 ${fmt(c,0)}</text>
+      <text x="${x0+bx-30}" y="${y0-8}" fill="#d9a05e" font-size="11" text-anchor="end">${fmt(a,1)}°</text>
+    </svg>`;
+    show(dia,1);
+  }
+  window.__triCalc=calc;
+})();
+
+/* ══════════ 공통 : 2D 시트 패킹 ══════════ */
+function packSheets(W,H,kerf,pieces,rot){
+  const items=[];
+  pieces.forEach(p=>{for(let i=0;i<p.qty;i++) items.push({w:p.w,h:p.h,name:p.w+"×"+p.h});});
+  items.forEach(it=>{
+    if(!rot) return;
+    const lo=Math.min(it.w,it.h), hi=Math.max(it.w,it.h);
+    if(hi<=W){it.w=hi;it.h=lo;} else {it.w=lo;it.h=hi;}
+  });
+  items.sort((x,y)=>y.h-x.h||y.w-x.w);
+  const sheets=[], unfit=[];
+  items.forEach(it=>{
+    if(!(it.w<=W&&it.h<=H)&&!(rot&&it.h<=W&&it.w<=H)){unfit.push(it);return;}
+    if(!(it.w<=W&&it.h<=H)){const t=it.w;it.w=it.h;it.h=t;}
+    let done=false;
+    for(let si=0;si<sheets.length&&!done;si++){
+      const s=sheets[si];
+      for(let hi=0;hi<s.shelves.length;hi++){
+        const sh=s.shelves[hi];
+        const gap=sh.items.length?kerf:0;
+        if(it.h<=sh.h&&sh.usedW+gap+it.w<=W+.001){
+          const x=sh.usedW+gap;
+          sh.items.push({x:x,y:sh.y,w:it.w,h:it.h,name:it.name});
+          sh.usedW=x+it.w; done=true; break;
+        }
+      }
+      if(done) break;
+      const gapH=s.shelves.length?kerf:0;
+      if(s.usedH+gapH+it.h<=H+.001){
+        const y=s.usedH+gapH;
+        s.shelves.push({y:y,h:it.h,usedW:it.w,items:[{x:0,y:y,w:it.w,h:it.h,name:it.name}]});
+        s.usedH=y+it.h; done=true;
+      }
+    }
+    if(!done){
+      sheets.push({shelves:[{y:0,h:it.h,usedW:it.w,items:[{x:0,y:0,w:it.w,h:it.h,name:it.name}]}],usedH:it.h});
+    }
+  });
+  return {sheets:sheets,unfit:unfit,total:items.length-unfit.length};
+}
+function sheetSVG(W,H,sheet,idx){
+  const fs=Math.max(W,H)/34, sw=Math.max(W,H)/300;
+  let g=`<rect x="0" y="0" width="${W}" height="${H}" fill="#1c1a17" stroke="#a49b8c" stroke-width="${sw*1.6}"/>`;
+  sheet.shelves.forEach(sh=>sh.items.forEach(it=>{
+    g+=`<rect x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" fill="rgba(217,160,94,.20)" stroke="#d9a05e" stroke-width="${sw}"/>`;
+    if(Math.min(it.w,it.h)>fs*2.2)
+      g+=`<text x="${it.x+it.w/2}" y="${it.y+it.h/2+fs*.36}" fill="#f5f2ec" font-size="${fs}" text-anchor="middle" font-family="sans-serif">${it.w}×${it.h}</text>`;
+  }));
+  const vb=`0 0 ${W} ${H}`;
+  return `<svg viewBox="${vb}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
+}
+function cutSteps(W,H,kerf,sheet){
+  const out=[];
+  const shelves=sheet.shelves.slice().sort((a,b)=>a.y-b.y);
+  shelves.forEach((sh,i)=>{
+    out.push(`<b>가로켜기 ${i+1}</b> — 아래에서 <b>${fmt(sh.y+sh.h,0)}mm</b> 지점을 가로로 자릅니다 (폭 ${fmt(sh.h,0)}mm 띠 분리)`);
+  });
+  shelves.forEach((sh,i)=>{
+    const xs=sh.items.map(it=>fmt(it.x+it.w,0)).join(" → ");
+    out.push(`<b>띠 ${i+1} 세로자르기</b> — 왼쪽 끝에서 ${xs} mm 순서로 자릅니다 (${sh.items.length}개)`);
+  });
+  return out;
+}
+
+/* ══════════ 2. 재단 최적화 ══════════ */
+(function(){
+  const res=$("#cut-res"),err=$("#cut-err"),box=$("#cut-sheets");
+  const tpl=`<input class="w" type="text" inputmode="decimal" placeholder="가로"><input class="h" type="text" inputmode="decimal" placeholder="세로"><input class="q" type="text" inputmode="numeric" value="1" data-keep="1"><button class="rdel" type="button">×</button>`;
+  $("#cut-spec").addEventListener("change",()=>{
+    const v=$("#cut-spec").value; if(v==="custom") return;
+    const p=v.split("x"); $("#cut-W").value=p[0]; $("#cut-H").value=p[1]; calc();
+  });
+  ["cut-W","cut-H","cut-k"].forEach(id=>$("#"+id).addEventListener("input",calc));
+  $("#cut-rot").addEventListener("change",calc);
+  rows("#cut-rows","#cut-add","c4",tpl,calc,2);
+
+  function calc(){
+    const W=num($("#cut-W").value),H=num($("#cut-H").value),k=num($("#cut-k").value)||0;
+    const rot=$("#cut-rot").checked;
+    const list=$$(".rrow",$("#cut-rows")).map(r=>({
+      w:num($(".w",r).value),h:num($(".h",r).value),qty:Math.max(1,Math.round(num($(".q",r).value)||0))
+    })).filter(o=>o.w>0&&o.h>0&&o.qty>0);
+    if(!(W>0&&H>0)||!list.length){show(res,0);show(err,0);box.innerHTML="";return;}
+    const r=packSheets(W,H,k,list,rot);
+    if(r.unfit.length){
+      err.innerHTML=`원판(${fmt(W,0)}×${fmt(H,0)})보다 큰 부재가 ${r.unfit.length}개 있습니다. 크기를 확인하세요.`;
+      show(err,1);
+    } else show(err,0);
+    if(!r.sheets.length){show(res,0);box.innerHTML="";return;}
+    const usedArea=list.reduce((a,p)=>a+p.w*p.h*p.qty,0);
+    const totArea=r.sheets.length*W*H;
+    const waste=totArea-usedArea;
+    res.innerHTML=
+      `<div class="hl">필요한 원판</div><div class="big">${r.sheets.length}<small>장</small></div>`+
+      `<div class="kvs">`+
+      kv("원판 규격",fmt(W,0)+" × "+fmt(H,0)+" mm")+
+      kv("재단 부재",fmt(r.total,0)+" 개")+
+      kv("사용 면적",fmt(usedArea/1e6,2)+" ㎡")+
+      kv("자투리 면적",fmt(waste/1e6,2)+" ㎡")+
+      kv("수율",fmt(usedArea/totArea*100,1)+" %",usedArea/totArea>.8?"good":"acc")+
+      kv("톱날 손실 반영",k>0?fmt(k,1)+" mm":"없음")+
+      `</div><div class="note">배치는 켜기(가로) → 세로자르기 순의 직선 재단 기준입니다. 결 방향이 중요하면 회전 허용을 끄세요.</div>`;
+    show(res,1);
+    box.innerHTML=r.sheets.map((s,i)=>{
+      const leftBottom=H-s.usedH, rightStrips=s.shelves.map(sh=>({w:W-sh.usedW,h:sh.h})).filter(o=>o.w>=100);
+      let scrap="";
+      if(leftBottom>=100) scrap+=`<div class="kv"><span class="k">위쪽 자투리</span><span class="v">${fmt(W,0)} × ${fmt(leftBottom,0)} mm</span></div>`;
+      rightStrips.forEach((o,j)=>{scrap+=`<div class="kv"><span class="k">띠 ${j+1} 끝 자투리</span><span class="v">${fmt(o.w,0)} × ${fmt(o.h,0)} mm</span></div>`;});
+      return `<div class="sheetbox"><h4>원판 ${i+1}장 — 배치도</h4>
+        <div class="svgwrap">${sheetSVG(W,H,s,i)}</div>
+        <ol class="steps">${cutSteps(W,H,k,s).map(x=>"<li>"+x+"</li>").join("")}</ol>
+        ${scrap?`<div class="res" style="margin-top:12px"><div class="hl">쓸 만한 자투리</div>${scrap}</div>`:""}
+      </div>`;
+    }).join("");
+  }
+})();
+
+/* ══════════ 3. 합판 장수 ══════════ */
+(function(){
+  const res=$("#ply-res"),err=$("#ply-err"),dia=$("#ply-dia");
+  $("#ply-spec").addEventListener("change",()=>{
+    const v=$("#ply-spec").value; if(v==="custom") return;
+    const p=v.split("x"); $("#ply-W").value=p[0]; $("#ply-H").value=p[1]; calc();
+  });
+  ["ply-W","ply-H","ply-w","ply-h","ply-q","ply-k","ply-m","ply-p"].forEach(id=>$("#"+id).addEventListener("input",calc));
+  $("#ply-rot").addEventListener("change",calc);
+
+  function grid(W,H,w,h,k){
+    const cols=Math.floor((W+k)/(w+k)), rowsN=Math.floor((H+k)/(h+k));
+    return {n:Math.max(0,cols)*Math.max(0,rowsN),cols:cols,rows:rowsN,w:w,h:h};
+  }
+  function calc(){
+    const W=num($("#ply-W").value),H=num($("#ply-H").value);
+    const w=num($("#ply-w").value),h=num($("#ply-h").value);
+    const q=Math.round(num($("#ply-q").value)),k=num($("#ply-k").value)||0;
+    const m=num($("#ply-m").value)||0,price=num($("#ply-p").value);
+    const rot=$("#ply-rot").checked;
+    if(!(W>0&&H>0&&w>0&&h>0&&q>0)){show(res,0);show(err,0);dia.innerHTML="";return;}
+    const a=grid(W,H,w,h,k), b=rot?grid(W,H,h,w,k):{n:0};
+    const best=b.n>a.n?b:a;
+    if(best.n<1){
+      err.innerHTML=`부재(${fmt(w,0)}×${fmt(h,0)})가 합판(${fmt(W,0)}×${fmt(H,0)})보다 큽니다.`;
+      show(err,1);show(res,0);dia.innerHTML="";return;
+    }
+    show(err,0);
+    const sheets=Math.ceil(q/best.n);
+    const buy=Math.ceil(sheets*(1+m/100));
+    const leftover=sheets*best.n-q;
+    const useRate=(q*w*h)/(sheets*W*H)*100;
+    res.innerHTML=
+      `<div class="hl">사야 할 합판</div><div class="big">${buy}<small>장</small></div>`+
+      `<div class="kvs">`+
+      kv("합판 1장에서",best.n+" 개 ("+best.cols+"열 × "+best.rows+"행)")+
+      kv("부재 놓는 방향",best===b?"90° 돌려서 "+fmt(best.w,0)+"×"+fmt(best.h,0):"그대로 "+fmt(w,0)+"×"+fmt(h,0))+
+      kv("계산상 필요",sheets+" 장")+
+      kv("여유 "+fmt(m,0)+"% 포함",buy+" 장","acc")+
+      kv("남는 부재",leftover+" 개")+
+      kv("합판 사용률",fmt(useRate,1)+" %",useRate>75?"good":"")+
+      (isFinite(price)&&price>0?kv("총 자재비",won(buy*price)+" 원","acc"):"")+
+      `</div><div class="note">톱날 ${fmt(k,1)}mm를 부재 사이마다 빼고 계산했습니다. 여러 크기를 섞어 자를 때는 «재단 최적화»를 쓰세요.</div>`;
+    show(res,1);
+    // 배치 미리보기 (1장)
+    const items=[]; for(let i=0;i<best.n;i++) items.push({w:best.w,h:best.h});
+    const shelves=[];
+    for(let r0=0;r0<best.rows;r0++){
+      const y=r0*(best.h+k), its=[];
+      for(let c0=0;c0<best.cols;c0++) its.push({x:c0*(best.w+k),y:y,w:best.w,h:best.h});
+      shelves.push({y:y,h:best.h,usedW:best.cols*best.w+(best.cols-1)*k,items:its});
+    }
+    dia.innerHTML=`<div class="sheetbox"><h4>합판 1장 배치 — ${best.n}개</h4><div class="svgwrap">${sheetSVG(W,H,{shelves:shelves},0)}</div></div>`;
+  }
+})();
+
+/* ══════════ 4. 각재 자르기 ══════════ */
+(function(){
+  const res=$("#bar-res"),err=$("#bar-err"),plan=$("#bar-plan");
+  const tpl=`<input class="L" type="text" inputmode="decimal" placeholder="길이"><input class="q" type="text" inputmode="numeric" value="1" data-keep="1"><button class="rdel" type="button">×</button>`;
+  ["bar-L","bar-k"].forEach(id=>$("#"+id).addEventListener("input",calc));
+  rows("#bar-rows","#bar-add","c3",tpl,calc,1);
+
+  function calc(){
+    const L=num($("#bar-L").value),k=num($("#bar-k").value)||0;
+    const list=$$(".rrow",$("#bar-rows")).map(r=>({
+      len:num($(".L",r).value),qty:Math.max(1,Math.round(num($(".q",r).value)||0))
+    })).filter(o=>o.len>0&&o.qty>0);
+    if(!(L>0)||!list.length){show(res,0);show(err,0);plan.innerHTML="";return;}
+    const tooLong=list.filter(o=>o.len>L);
+    if(tooLong.length){
+      err.innerHTML=`각재 길이(${fmt(L,0)}mm)보다 긴 토막이 있습니다: ${tooLong.map(o=>fmt(o.len,0)).join(", ")} mm`;
+      show(err,1);
+    } else show(err,0);
+    const items=[];
+    list.filter(o=>o.len<=L).forEach(o=>{for(let i=0;i<o.qty;i++) items.push(o.len);});
+    if(!items.length){show(res,0);plan.innerHTML="";return;}
+    items.sort((a,b)=>b-a);
+    const bars=[];
+    items.forEach(len=>{
+      let ok=false;
+      for(let i=0;i<bars.length;i++){
+        const need=len+(bars[i].cuts.length?k:0);
+        if(bars[i].used+need<=L+.001){bars[i].used+=need;bars[i].cuts.push(len);ok=true;break;}
+      }
+      if(!ok) bars.push({used:len,cuts:[len]});
+    });
+    const totalScrap=bars.reduce((a,b)=>a+(L-b.used),0);
+    const reusable=bars.map(b=>L-b.used).filter(x=>x>=300);
+    const single=list.length===1;
+    let head="";
+    if(single){
+      const one=list[0].len;
+      const per=Math.floor((L+k)/(one+k));
+      const rest=L-(per*one+(per-1)*k);
+      head=`<div class="hl">각재 1개에서</div><div class="big">${per}<small>토막</small></div>`+
+        `<div class="kvs">`+
+        kv("한 개 자르고 남는 자투리",fmt(rest,1)+" mm","acc")+
+        kv("필요한 각재",bars.length+" 개")+
+        `</div>`;
+    } else {
+      head=`<div class="hl">필요한 각재</div><div class="big">${bars.length}<small>개</small></div><div class="kvs">`+
+        kv("자를 토막 총 개수",items.length+" 개")+`</div>`;
+    }
+    res.innerHTML=head+`<div class="kvs">`+
+      kv("각재 1개 길이",fmt(L,0)+" mm")+
+      kv("총 자투리",fmt(totalScrap,0)+" mm ("+fmt(totalScrap/1000,2)+" m)")+
+      kv("재사용 가능 자투리",reusable.length?reusable.length+"개 · "+reusable.map(x=>fmt(x,0)).join(", ")+" mm":"없음 (300mm 미만)")+
+      kv("자재 효율",fmt((items.reduce((a,b)=>a+b,0))/(bars.length*L)*100,1)+" %")+
+      kv("톱날 손실",fmt((items.length-bars.length)*k,0)+" mm")+
+      `</div><div class="note">긴 토막부터 채워 넣는 방식(FFD)으로 각재 개수를 최소화했습니다.</div>`;
+    show(res,1);
+    plan.innerHTML=`<div class="sheetbox"><h4>각재별 자르는 순서</h4><ol class="steps">`+
+      bars.map((b,i)=>{
+        const rest=L-b.used;
+        return `<li><b>각재 ${i+1}</b> — ${b.cuts.map(x=>fmt(x,0)).join(" → ")} mm &nbsp;/&nbsp; 자투리 <b>${fmt(rest,0)}mm</b></li>`;
+      }).join("")+`</ol></div>`;
+  }
+})();
+
+/* ══════════ 5. 페인트 ══════════ */
+(function(){
+  const res=$("#pt-res");
+  ["pt-w","pt-h","pt-n","pt-x","pt-c","pt-e","pt-p"].forEach(id=>$("#"+id).addEventListener("input",calc));
+  $("#pt-can").addEventListener("change",calc);
+  function calc(){
+    const w=num($("#pt-w").value),h=num($("#pt-h").value);
+    const n=Math.max(1,Math.round(num($("#pt-n").value)||1));
+    const x=num($("#pt-x").value)||0;
+    const c=Math.max(1,Math.round(num($("#pt-c").value)||1));
+    const e=num($("#pt-e").value)||9;
+    const can=num($("#pt-can").value),price=num($("#pt-p").value);
+    if(!(w>0&&h>0)){show(res,0);return;}
+    const gross=w*h*n, net=Math.max(0,gross-x), paintArea=net*c;
+    const liters=paintArea/e, cans=Math.ceil(liters/can), left=cans*can-liters;
+    res.innerHTML=
+      `<div class="hl">사야 할 페인트</div><div class="big">${cans}<small>통 (${fmt(can,0)}L)</small></div>`+
+      `<div class="kvs">`+
+      kv("전체 벽 면적",fmt(gross,2)+" ㎡")+
+      kv("제외 후 도장 면적",fmt(net,2)+" ㎡")+
+      kv(c+"회 도장 총 면적",fmt(paintArea,2)+" ㎡")+
+      kv("필요한 양",fmt(liters,2)+" L","acc")+
+      kv("구입량",fmt(cans*can,1)+" L")+
+      kv("남는 양",fmt(left,2)+" L")+
+      (isFinite(price)&&price>0?kv("총 비용",won(cans*price)+" 원","acc"):"")+
+      `</div><div class="note">도포량은 제품마다 다릅니다. 수성 페인트 8~10㎡/L, 스테인 10~14㎡/L, 바니시 12~16㎡/L 정도가 보통입니다.</div>`;
+    show(res,1);
+  }
+})();
+
+/* ══════════ 6. 계단 ══════════ */
+(function(){
+  const res=$("#st-res"),err=$("#st-err"),dia=$("#st-dia");
+  ["st-H","st-n","st-g"].forEach(id=>$("#"+id).addEventListener("input",calc));
+  function calc(){
+    const H=num($("#st-H").value);
+    if(!(H>0)){show(res,0);show(err,0);show(dia,0);return;}
+    let n=Math.round(num($("#st-n").value));
+    const auto=!(n>0);
+    if(auto) n=Math.max(2,Math.round(H/180));
+    if(n<2){err.textContent="단 수는 2 이상이어야 합니다.";show(err,1);show(res,0);show(dia,0);return;}
+    show(err,0);
+    const R=H/n;
+    let G=num($("#st-g").value);
+    const autoG=!(G>0);
+    if(autoG) G=Math.min(320,Math.max(240,Math.round((630-2*R)/5)*5));
+    const treads=n-1, run=treads*G, ang=deg(Math.atan2(R,G));
+    const rule=2*R+G, rule2=R+G;
+    const okR=R>=150&&R<=195, okG=G>=250&&G<=320, okRule=rule>=600&&rule<=650;
+    const bd=(ok,t)=>`<span class="badge ${ok?"ok":"no"}">${ok?"적정":t}</span>`;
+    res.innerHTML=
+      `<div class="hl">한 단 높이 (챌판)</div><div class="big">${fmt(R,1)}<small>mm</small></div>`+
+      `<div class="kvs">`+
+      kv("단 수 (챌판)",n+" 단"+(auto?" <span class='badge'>자동</span>":""))+
+      kv("디딤판 개수",treads+" 장")+
+      kv("디딤판 나비",fmt(G,0)+" mm"+(autoG?" <span class='badge'>자동</span>":""),"acc")+
+      kv("총 수평 길이",fmt(run,0)+" mm ("+fmt(run/1000,2)+" m)")+
+      kv("경사각",fmt(ang,1)+"°")+
+      kv("경사 길이(옆판)",fmt(Math.hypot(run,H),0)+" mm")+
+      `</div><div class="kvs">`+
+      kv("2R+G (600~650)",fmt(rule,0)+bd(okRule,"벗어남"))+
+      kv("R+G (430~470)",fmt(rule2,0)+bd(rule2>=430&&rule2<=470,"벗어남"))+
+      kv("챌판 높이 (150~195)",fmt(R,1)+bd(okR,R>195?"너무 가파름":"너무 낮음"))+
+      kv("디딤판 (250~320)",fmt(G,0)+bd(okG,G>320?"너무 넓음":"너무 좁음"))+
+      `</div><div class="note">건축법상 주택 계단은 챌판 200mm 이하, 디딤판 240mm 이상입니다. 2R+G=630 근처가 가장 걷기 편한 값으로 알려져 있습니다.</div>`;
+    show(res,1);
+    // 도해
+    const showN=Math.min(n,7), W=310,Hh=190,pad=18;
+    const sc=Math.min((W-pad*2)/(showN*G),(Hh-pad*2)/(showN*R));
+    let p=`M${pad} ${Hh-pad}`;
+    for(let i=0;i<showN;i++) p+=` v${-R*sc} h${G*sc}`;
+    dia.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}">
+      <path d="${p}" fill="none" stroke="#d9a05e" stroke-width="2.4" stroke-linejoin="round"/>
+      <text x="${pad+2}" y="${Hh-pad-R*sc/2}" fill="#a49b8c" font-size="10">${fmt(R,0)}</text>
+      <text x="${pad+G*sc/2}" y="${Hh-pad-R*sc-5}" fill="#a49b8c" font-size="10" text-anchor="middle">${fmt(G,0)}</text>
+      <text x="${W-6}" y="${14}" fill="#a49b8c" font-size="10" text-anchor="end">${showN<n?"앞 "+showN+"단만 표시":n+"단 전체"}</text>
+    </svg>`;
+    show(dia,1);
+  }
+})();
+
+/* ══════════ 7. 일당 정산 ══════════ */
+(function(){
+  const res=$("#pay-res");
+  ["pay-d","pay-n","pay-x","pay-m","pay-rate"].forEach(id=>$("#"+id).addEventListener("input",calc));
+  $("#pay-t33").addEventListener("change",calc);
+  function calc(){
+    const d=num($("#pay-d").value),n=num($("#pay-n").value);
+    const x=num($("#pay-x").value)||0,m=num($("#pay-m").value)||0;
+    const on=$("#pay-t33").checked, rate=on?(num($("#pay-rate").value)||0):0;
+    if(!(d>0&&n>0)){show(res,0);return;}
+    const base=d*n, gross=base+x, tax=gross*rate/100, net=gross-tax-m;
+    res.innerHTML=
+      `<div class="hl">실수령액</div><div class="big">${won(net)}<small>원</small></div>`+
+      `<div class="kvs">`+
+      kv("일당 × 공수",won(d)+"원 × "+fmt(n,1)+"일")+
+      kv("기본 지급액",won(base)+" 원")+
+      (x?kv("추가 수당","+ "+won(x)+" 원"):"")+
+      kv("총 지급액",won(gross)+" 원")+
+      (rate?kv("공제 "+fmt(rate,1)+"%","− "+won(tax)+" 원","warn"):"")+
+      (m?kv("기타 공제","− "+won(m)+" 원","warn"):"")+
+      kv("실수령액",won(net)+" 원","acc")+
+      `</div><div class="kvs">`+
+      kv("하루 실수령 환산",won(net/n)+" 원")+
+      `</div><div class="note">일용직 사업소득 원천징수는 3.3%(소득세 3% + 지방소득세 0.3%)가 일반적입니다. 4대보험 가입 현장은 별도 계산이 필요합니다.</div>`;
+    show(res,1);
+  }
+})();
+
+/* ══════════ 8. 자재비 견적 ══════════ */
+(function(){
+  const res=$("#est-res"),cp=$("#est-copy");
+  const tpl=`<input class="nm" type="text" placeholder="자재명"><input class="q" type="text" inputmode="decimal" placeholder="수량"><input class="p" type="text" inputmode="numeric" placeholder="단가"><button class="rdel" type="button">×</button>`;
+  ["est-ship","est-disc"].forEach(id=>$("#"+id).addEventListener("input",calc));
+  $("#est-vat").addEventListener("change",calc);
+  rows("#est-rows","#est-add","c3t",tpl,calc,3);
+  let lastText="";
+  cp.addEventListener("click",()=>{
+    const t=lastText;
+    const done=()=>{cp.textContent="복사되었습니다";setTimeout(()=>cp.textContent="견적 내용 복사하기",1600);};
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,fallback);
+    else fallback();
+    function fallback(){
+      const ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";
+      document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done();}catch(_){}
+      document.body.removeChild(ta);
+    }
+  });
+  function calc(){
+    const list=$$(".rrow",$("#est-rows")).map(r=>({
+      nm:$(".nm",r).value.trim(),q:num($(".q",r).value),p:num($(".p",r).value)
+    })).filter(o=>o.q>0&&o.p>0);
+    if(!list.length){show(res,0);show(cp,0);return;}
+    const ship=num($("#est-ship").value)||0, disc=num($("#est-disc").value)||0;
+    const vatOn=$("#est-vat").checked;
+    const sub=list.reduce((a,o)=>a+o.q*o.p,0);
+    const supply=sub+ship-disc;
+    const vat=vatOn?supply*.1:0;
+    const total=supply+vat;
+    res.innerHTML=
+      `<div class="hl">${vatOn?"부가세 포함 ":""}총 견적</div><div class="big">${won(total)}<small>원</small></div>`+
+      `<div class="kvs">`+
+      list.map(o=>kv((o.nm||"품목")+" <span style='color:var(--muted);font-size:12px'>"+fmt(o.q,2)+" × "+won(o.p)+"</span>",won(o.q*o.p)+" 원")).join("")+
+      `</div><div class="kvs">`+
+      kv("자재 소계",won(sub)+" 원")+
+      (ship?kv("운반비","+ "+won(ship)+" 원"):"")+
+      (disc?kv("할인","− "+won(disc)+" 원","warn"):"")+
+      kv("공급가액",won(supply)+" 원")+
+      (vatOn?kv("부가세 10%","+ "+won(vat)+" 원"):"")+
+      kv("합계",won(total)+" 원","acc")+
+      `</div>`;
+    show(res,1);show(cp,1);
+    lastText="[자재비 견적]\n"+
+      list.map(o=>`${o.nm||"품목"}  ${fmt(o.q,2)} × ${won(o.p)}원 = ${won(o.q*o.p)}원`).join("\n")+
+      `\n----------------\n자재 소계  ${won(sub)}원`+
+      (ship?`\n운반비  ${won(ship)}원`:"")+(disc?`\n할인  -${won(disc)}원`:"")+
+      `\n공급가액  ${won(supply)}원`+(vatOn?`\n부가세 10%  ${won(vat)}원`:"")+
+      `\n합계  ${won(total)}원`;
+  }
+})();
+
+/* ══════════ 9. 단위 환산 ══════════ */
+(function(){
+  const res=$("#un-res");
+  const U={mm:1,cm:10,m:1000,ja:303.03,chi:30.303,pun:3.0303,in:25.4,ft:304.8};
+  $("#un-v").addEventListener("input",calc);
+  $("#un-u").addEventListener("change",calc);
+  function inchFrac(inch){
+    const sign=inch<0?"-":""; inch=Math.abs(inch);
+    let whole=Math.floor(inch), f=Math.round((inch-whole)*16), den=16;
+    if(f===16){whole++;f=0;}
+    if(f===0) return sign+whole+'"';
+    while(f%2===0){f/=2;den/=2;}
+    return sign+(whole?whole+" ":"")+f+"/"+den+'"';
+  }
+  function calc(){
+    const v=num($("#un-v").value), u=$("#un-u").value;
+    if(!isFinite(v)){show(res,0);return;}
+    const mm=v*U[u];
+    const punTot=mm/U.pun;
+    const ja=Math.floor(punTot/100), chi=Math.floor((punTot%100)/10), pun=Math.round(punTot%10);
+    const combo=(ja?ja+"자 ":"")+(chi||ja?chi+"치 ":"")+pun+"푼";
+    res.innerHTML=
+      `<div class="hl">${fmt(v,4)} ${$("#un-u").selectedOptions[0].text.split(" ")[0]} =</div>`+
+      `<div class="big">${fmt(mm,2)}<small>mm</small></div>`+
+      `<table class="utab">`+
+      `<tr><td>센티미터</td><td>${fmt(mm/U.cm,3)} cm</td></tr>`+
+      `<tr><td>미터</td><td>${fmt(mm/U.m,4)} m</td></tr>`+
+      `<tr><td>자 (척)</td><td>${fmt(mm/U.ja,3)} 자</td></tr>`+
+      `<tr><td>치 (촌)</td><td>${fmt(mm/U.chi,2)} 치</td></tr>`+
+      `<tr><td>푼</td><td>${fmt(mm/U.pun,1)} 푼</td></tr>`+
+      `<tr><td>자·치·푼</td><td>${combo}</td></tr>`+
+      `<tr><td>인치</td><td>${fmt(mm/U.in,3)} in</td></tr>`+
+      `<tr><td>인치 (분수)</td><td>${inchFrac(mm/U.in)}</td></tr>`+
+      `<tr><td>피트</td><td>${fmt(mm/U.ft,3)} ft</td></tr>`+
+      `</table>`;
+    show(res,1);
+  }
+})();
+
+/* ═══ 설치 화면 ═══ */
+(function(){
+  const scr=$("#install"),btn=$("#btnInstall"),skip=$("#btnSkip"),hint=$("#insHint");
+  const standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  const seen=localStorage.getItem(SK+"installSeen")==="1";
+  let deferred=null;
+  const ua=navigator.userAgent;
+  const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+
+  if(!standalone&&!seen){ scr.hidden=false; document.body.style.overflow="hidden"; }
+
+  addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;btn.textContent="홈 화면에 설치하기";});
+  addEventListener("appinstalled",()=>{close();});
+
+  btn.addEventListener("click",async()=>{
+    if(deferred){ deferred.prompt(); const r=await deferred.userChoice; deferred=null; if(r.outcome==="accepted") close(); return; }
+    hint.hidden=false;
+    hint.innerHTML=isIOS
+      ? `<b>아이폰 · 아이패드에서 설치</b><br>1. 사파리 아래쪽 <b>공유 버튼 ⬆︎</b> 누르기<br>2. 목록을 내려서 <b>‘홈 화면에 추가’</b> 선택<br>3. 오른쪽 위 <b>‘추가’</b> 누르기<br><br>홈 화면에 le nœud 아이콘이 생기고, 인터넷 없이도 열립니다.`
+      : `<b>설치 방법</b><br>크롬 주소창 오른쪽의 <b>설치 아이콘(⊕)</b> 또는 <b>⋮ 메뉴 → 앱 설치</b>를 눌러주세요.<br><br>이미 설치했거나 브라우저가 지원하지 않으면 아래 ‘설치 없이 바로 쓰기’로 그냥 사용하셔도 됩니다.`;
+  });
+  skip.addEventListener("click",close);
+  function close(){
+    try{localStorage.setItem(SK+"installSeen","1");}catch(_){}
+    scr.hidden=true; document.body.style.overflow="";
+  }
+})();
+
+/* ═══ 시작 ═══ */
+restore();
+route();
+["__triCalc"].forEach(f=>{ if(window[f]) window[f](); });
+$$("input[id],select[id]").forEach(el=>el.dispatchEvent(new Event("input",{bubbles:true})));
+
+if("serviceWorker" in navigator){
+  addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+}
+</script>
+</body>
+</html>
