@@ -24,17 +24,23 @@
 8. **자재비 견적** — 수량·단가 → 부가세 포함 합계 (복사 기능)
 9. **단위 환산** — 자·치·푼·mm·cm·m·인치(분수 표기)·피트
 
-## 설치해서 쓰기
+## 주소
 
-PWA 설치는 **https 주소**에서만 됩니다. `index.html`을 더블클릭해 여는 방식(file://)으로는
-계산기는 다 되지만 「홈 화면에 설치」는 안 됩니다.
+**https://choiungbin47-99.github.io/le-noeud-tools/**
 
-### 방법 — Netlify에 올리기 (le nœud 사이트와 같은 방식)
+GitHub Pages로 배포돼 있습니다 (저장소 `choiungbin47-99/le-noeud-tools`, 무료·배포 횟수 제한 없음).
+`index.html`을 더블클릭해 여는 방식(file://)으로도 계산기는 다 되지만,
+「홈 화면에 설치」와 오프라인 캐시는 위 https 주소에서만 작동합니다.
 
-1. [app.netlify.com](https://app.netlify.com) 로그인
-2. **Add new site → Deploy manually**
-3. `le-noeud-app` 폴더를 통째로 끌어다 놓기
-4. 나온 주소(예: `le-noeud-tools.netlify.app`)를 폰에서 열기
+### 고친 내용을 반영하려면
+
+```bash
+git add -A && git commit -m "수정 내용" && git push
+```
+
+push하면 1분 안에 위 주소에 자동 반영됩니다.
+단, `sw.js`를 고쳤다면 맨 위 `CACHE = "lenoeud-v1"`의 숫자를 올려야
+이미 설치된 폰이 옛 버전을 계속 쓰지 않습니다.
 
 ### 폰에서 설치
 
@@ -54,5 +60,4 @@ PWA 설치는 **https 주소**에서만 됩니다. `index.html`을 더블클릭�
 ## 수정할 때
 
 계산 로직은 전부 `index.html` 아래쪽 `<script>` 안에 도구별로 나뉘어 있습니다.
-`sw.js`를 고치면 맨 위 `const CACHE = "lenoeud-v1"`의 숫자를 올려야
-폰에 캐시된 옛 버전 대신 새 버전이 내려받아집니다.
+각 계산기가 `/* ══ 이름 ══ */` 주석으로 구분돼 있어 해당 블록만 보면 됩니다.
