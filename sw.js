@@ -1,7 +1,7 @@
 /* le nœud — 목공 계산기 · 서비스워커
    앱 파일을 통째로 캐시해서 인터넷 없이도 열리게 합니다. */
 
-const CACHE = "lenoeud-v1";
+const CACHE = "lenoeud-v2";
 const ASSETS = [
   "./",
   "./index.html",

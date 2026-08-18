@@ -326,15 +326,58 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
 
 <!-- ══ 6. 계단 ══ -->
 <section class="view" id="v-stair">
-  <p class="lead">층 높이와 단 수를 넣으면 한 단 높이 · 디딤판 치수 · 경사각이 나옵니다.</p>
-  <div class="field"><label>층 높이 — 바닥에서 바닥까지 (mm)</label><input id="st-H" type="text" inputmode="decimal" placeholder="2700"></div>
-  <div class="r2">
-    <div class="field"><label>단 수 (챌판 수)</label><input id="st-n" type="text" inputmode="numeric" placeholder="자동"></div>
-    <div class="field"><label>디딤판 나비 (mm)</label><input id="st-g" type="text" inputmode="decimal" placeholder="자동"></div>
+  <p class="lead">목조주택 I·B·C 설계기준으로 검증하면서 계산합니다.<br>
+    <b style="color:var(--ink)">런 10″↑ · 라이즈 7¾″↓ · 경사 38°↓ · 헤드룸 6′-8″↑</b></p>
+
+  <div class="field"><label>층 높이(Total Rise) 넣는 방법</label>
+    <select id="st-mode">
+      <option value="direct">직접 입력</option>
+      <option value="frame">골조 치수로 합산</option>
+    </select>
   </div>
+
+  <div id="st-direct">
+    <div class="field"><label>층 높이 Total Rise (mm)</label>
+      <input id="st-H" type="text" inputmode="decimal" placeholder="2797"></div>
+  </div>
+
+  <div id="st-frame" hidden>
+    <div class="r2">
+      <div class="field"><label>밑깔도리 1½″</label><input id="st-f1" type="text" inputmode="decimal" value="38"></div>
+      <div class="field"><label>스터드 92⅝″</label><input id="st-f2" type="text" inputmode="decimal" value="2353"></div>
+    </div>
+    <div class="r2">
+      <div class="field"><label>윗깔도리+이중 3″</label><input id="st-f3" type="text" inputmode="decimal" value="76"></div>
+      <div class="field"><label>바닥장선 9¼″</label><input id="st-f4" type="text" inputmode="decimal" value="235"></div>
+    </div>
+    <div class="r2">
+      <div class="field"><label>바닥 합판 ¾″</label><input id="st-f5" type="text" inputmode="decimal" value="19"></div>
+      <div class="field"><label>2층 바닥난방 3″</label><input id="st-f6" type="text" inputmode="decimal" value="76"></div>
+    </div>
+    <div class="kv" style="padding:14px;background:var(--surface);border:1px solid var(--line)">
+      <span class="k">Total Rise 합계</span><span class="v acc" id="st-sum">–</span></div>
+  </div>
+
+  <div class="sec">단 수 · 수평 길이</div>
+  <div class="r2">
+    <div class="field"><label>단 수 (라이즈 개수)</label><input id="st-n" type="text" inputmode="numeric" placeholder="자동"></div>
+    <div class="field"><label>Total Run (mm)</label><input id="st-run" type="text" inputmode="decimal" placeholder="자동"></div>
+  </div>
+  <div class="r2">
+    <div class="field"><label>헤드룸 (mm)</label><input id="st-head" type="text" inputmode="decimal" placeholder="선택"></div>
+    <div class="field"><label>계단 폭 (mm)</label><input id="st-w" type="text" inputmode="decimal" placeholder="900"></div>
+  </div>
+
+  <div class="sec">스트링거</div>
+  <div class="r2">
+    <div class="field"><label>마감 합판 두께 (mm)</label><input id="st-ply" type="text" inputmode="decimal" value="19"></div>
+    <div class="field"><label>스트링거 폭 (mm)</label><input id="st-sw" type="text" inputmode="decimal" value="286"></div>
+  </div>
+
   <div class="err" id="st-err" hidden></div>
   <div class="res" id="st-res" hidden></div>
   <div class="diagram" id="st-dia" hidden></div>
+  <div id="st-more"></div>
 </section>
 
 <!-- ══ 7. 일당 정산 ══ -->
@@ -413,6 +456,23 @@ const kv=(k,v,cls="")=>`<div class="kv"><span class="k">${k}</span><span class="
 const show=(el,on)=>{el.hidden=!on;};
 const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
 
+/* mm → 인치 분수 표기 (16분의 1까지) */
+const IN=25.4;
+function toInch(mm){
+  if(!isFinite(mm)) return "–";
+  const sign=mm<0?"-":""; const a=Math.abs(mm)/IN;
+  let whole=Math.floor(a), f=Math.round((a-whole)*16), den=16;
+  if(f===16){whole++;f=0;}
+  if(f===0) return sign+whole+'"';
+  while(f%2===0){f/=2;den/=2;}
+  return sign+(whole?whole+" ":"")+f+"/"+den+'"';
+}
+function toFtIn(mm){
+  if(!isFinite(mm)) return "–";
+  const inch=mm/IN, ft=Math.floor(inch/12);
+  return ft+"'-"+toInch((inch-ft*12)*IN);
+}
+
 /* ═══ 도구 목록 ═══ */
 const ICON={
   tri:'<svg width="30" height="26" viewBox="0 0 30 26" fill="none"><path d="M3 23V3l20 20H3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
@@ -431,7 +491,7 @@ const TOOLS=[
   {id:"ply",  t:"합판 장수",    d:"몇 장 사야 하나<br>금액까지"},
   {id:"bar",  t:"각재 자르기",  d:"몇 토막 나오고<br>몇 mm 남나"},
   {id:"paint",t:"페인트 양",    d:"면적·리터<br>몇 통 필요한가"},
-  {id:"stair",t:"계단 계산",    d:"단 높이·디딤판<br>경사각 적정성"},
+  {id:"stair",t:"계단 계산",    d:"I·B·C 기준 검증<br>스트링거 재단"},
   {id:"pay",  t:"일당 정산",    d:"공수·공제<br>실수령액"},
   {id:"est",  t:"자재비 견적",  d:"수량·단가<br>부가세 포함 합계"},
   {id:"unit", t:"단위 환산",    d:"자·치·푼·mm<br>인치·피트"}
@@ -825,55 +885,149 @@ function cutSteps(W,H,kerf,sheet){
   }
 })();
 
-/* ══════════ 6. 계단 ══════════ */
+/* ══════════ 6. 계단 (I·B·C 목조주택 기준) ══════════ */
 (function(){
-  const res=$("#st-res"),err=$("#st-err"),dia=$("#st-dia");
-  ["st-H","st-n","st-g"].forEach(id=>$("#"+id).addEventListener("input",calc));
+  const res=$("#st-res"),err=$("#st-err"),dia=$("#st-dia"),more=$("#st-more");
+  const MAX_RISE=7.75*IN;   // 196.85 라이즈 최대
+  const MIN_RUN =10*IN;     // 254    런 최소
+  const SUM_RR  =17.75*IN;  // 450.85 Run+Rise 설계기준치
+  const MIN_HEAD=80*IN;     // 2032   헤드룸 6'-8"
+  const MAX_ANG =38;
+  const MIN_THR =4*IN;      // 101.6  스트링거 남은 폭
+
+  const FR=["st-f1","st-f2","st-f3","st-f4","st-f5","st-f6"];
+  ["st-H","st-n","st-run","st-head","st-w","st-ply","st-sw"].concat(FR)
+    .forEach(id=>$("#"+id).addEventListener("input",calc));
+  $("#st-mode").addEventListener("change",()=>{
+    const f=$("#st-mode").value==="frame";
+    show($("#st-frame"),f); show($("#st-direct"),!f); calc();
+  });
+
   function calc(){
-    const H=num($("#st-H").value);
-    if(!(H>0)){show(res,0);show(err,0);show(dia,0);return;}
+    const frameMode=$("#st-mode").value==="frame";
+    let H;
+    if(frameMode){
+      H=FR.reduce((a,id)=>a+(num($("#"+id).value)||0),0);
+      $("#st-sum").textContent=H>0?fmt(H,0)+" mm ("+toFtIn(H)+")":"–";
+    } else H=num($("#st-H").value);
+
+    if(!(H>0)){show(res,0);show(err,0);show(dia,0);more.innerHTML="";return;}
+
+    // ① 라이즈 개수 — 비우면 7¾" 기준으로 올림
     let n=Math.round(num($("#st-n").value));
-    const auto=!(n>0);
-    if(auto) n=Math.max(2,Math.round(H/180));
-    if(n<2){err.textContent="단 수는 2 이상이어야 합니다.";show(err,1);show(res,0);show(dia,0);return;}
+    const autoN=!(n>0);
+    if(autoN) n=Math.ceil(H/MAX_RISE);
+    if(n<2) n=2;
+    const R=H/n, treads=n-1;
+
+    // ② 런 — Total Run이 있으면 나누고, 없으면 Run+Rise=17¾" 공식
+    //    자동일 때는 템플릿에 실제로 그을 수 있게 1/16″ 단위로 맞춘 뒤 곱한다
+    const snap16=mm=>Math.round(mm/IN*16)/16*IN;
+    let totalRun=num($("#st-run").value);
+    const autoRun=!(totalRun>0);
+    let G;
+    if(autoRun){ G=snap16(SUM_RR-R); totalRun=G*treads; }
+    else G=totalRun/treads;
+
+    if(!(G>0)){err.textContent="Total Run이 너무 짧습니다. 값을 확인하세요.";show(err,1);show(res,0);show(dia,0);more.innerHTML="";return;}
     show(err,0);
-    const R=H/n;
-    let G=num($("#st-g").value);
-    const autoG=!(G>0);
-    if(autoG) G=Math.min(320,Math.max(240,Math.round((630-2*R)/5)*5));
-    const treads=n-1, run=treads*G, ang=deg(Math.atan2(R,G));
-    const rule=2*R+G, rule2=R+G;
-    const okR=R>=150&&R<=195, okG=G>=250&&G<=320, okRule=rule>=600&&rule<=650;
-    const bd=(ok,t)=>`<span class="badge ${ok?"ok":"no"}">${ok?"적정":t}</span>`;
+
+    const ang=deg(Math.atan2(R,G));
+    const diag=Math.hypot(totalRun,H);
+    const head=num($("#st-head").value);
+    const ply=num($("#st-ply").value)||0;
+    const sw=num($("#st-sw").value)||0;
+    const width=num($("#st-w").value);
+
+    // 스트링거 남은 폭(throat) = 판 폭 − 노치 직각점에서 빗변까지 거리
+    const throat=sw-(R*G)/Math.hypot(R,G);
+
+    const okR=R<=MAX_RISE, okG=G>=MIN_RUN, okA=ang<=MAX_ANG;
+    const okH=!(head>0)||head>=MIN_HEAD, okT=!(sw>0)||throat>=MIN_THR;
+    const allOk=okR&&okG&&okA&&okH&&okT;
+    const bd=(ok,ng)=>`<span class="badge ${ok?"ok":"no"}">${ok?"적합":ng}</span>`;
+
     res.innerHTML=
-      `<div class="hl">한 단 높이 (챌판)</div><div class="big">${fmt(R,1)}<small>mm</small></div>`+
+      `<div class="hl">라이즈 — 한 단 높이</div>`+
+      `<div class="big">${fmt(R,1)}<small>mm · ${toInch(R)}</small></div>`+
       `<div class="kvs">`+
-      kv("단 수 (챌판)",n+" 단"+(auto?" <span class='badge'>자동</span>":""))+
-      kv("디딤판 개수",treads+" 장")+
-      kv("디딤판 나비",fmt(G,0)+" mm"+(autoG?" <span class='badge'>자동</span>":""),"acc")+
-      kv("총 수평 길이",fmt(run,0)+" mm ("+fmt(run/1000,2)+" m)")+
+      kv("런 — 한 단 길이",fmt(G,1)+" mm · "+toInch(G),"acc")+
+      kv("라이즈 개수",n+" 개"+(autoN?" <span class='badge'>자동</span>":""))+
+      kv("런 개수 (디딤판)",treads+" 개")+
+      kv("Total Rise",fmt(H,0)+" mm · "+toFtIn(H))+
+      kv("Total Run",fmt(totalRun,0)+" mm · "+toFtIn(totalRun)+(autoRun?" <span class='badge'>자동</span>":""))+
       kv("경사각",fmt(ang,1)+"°")+
-      kv("경사 길이(옆판)",fmt(Math.hypot(run,H),0)+" mm")+
-      `</div><div class="kvs">`+
-      kv("2R+G (600~650)",fmt(rule,0)+bd(okRule,"벗어남"))+
-      kv("R+G (430~470)",fmt(rule2,0)+bd(rule2>=430&&rule2<=470,"벗어남"))+
-      kv("챌판 높이 (150~195)",fmt(R,1)+bd(okR,R>195?"너무 가파름":"너무 낮음"))+
-      kv("디딤판 (250~320)",fmt(G,0)+bd(okG,G>320?"너무 넓음":"너무 좁음"))+
-      `</div><div class="note">건축법상 주택 계단은 챌판 200mm 이하, 디딤판 240mm 이상입니다. 2R+G=630 근처가 가장 걷기 편한 값으로 알려져 있습니다.</div>`;
+      kv("스트링거 대각 길이",fmt(diag,0)+" mm · "+toFtIn(diag))+
+      `</div>`+
+
+      `<div class="hl" style="margin-top:20px">I·B·C 설계기준 검증</div><div class="kvs">`+
+      kv("라이즈 ≤ 7¾″ (196.85)",toInch(R)+bd(okR,"초과"),okR?"good":"warn")+
+      kv("런 ≥ 10″ (254)",toInch(G)+bd(okG,"미달"),okG?"good":"warn")+
+      kv("경사각 ≤ 38°",fmt(ang,1)+"°"+bd(okA,"가파름"),okA?"good":"warn")+
+      (head>0?kv("헤드룸 ≥ 6′-8″ (2032)",fmt(head,0)+" mm"+bd(okH,"부족"),okH?"good":"warn"):"")+
+      (sw>0?kv("스트링거 남은 폭 ≥ 4″",toInch(throat)+bd(okT,"부족"),okT?"good":"warn"):"")+
+      kv("Run + Rise (기준 17¾″)",toInch(G+R))+
+      `</div>`+
+      (allOk
+        ? `<div class="note" style="color:var(--good)">설계기준을 모두 만족합니다. 이대로 스트링거를 켜도 됩니다.</div>`
+        : `<div class="note" style="color:var(--warn)">기준을 벗어난 항목이 있습니다. 라이즈 개수를 ${n+1}개로 늘리거나 Total Run을 넓혀보세요.</div>`);
     show(res,1);
+
     // 도해
-    const showN=Math.min(n,7), W=310,Hh=190,pad=18;
+    const showN=Math.min(n,7), W=320,Hh=200,pad=20;
     const sc=Math.min((W-pad*2)/(showN*G),(Hh-pad*2)/(showN*R));
     let p=`M${pad} ${Hh-pad}`;
     for(let i=0;i<showN;i++) p+=` v${-R*sc} h${G*sc}`;
     dia.innerHTML=`<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}">
       <path d="${p}" fill="none" stroke="#d9a05e" stroke-width="2.4" stroke-linejoin="round"/>
-      <text x="${pad+2}" y="${Hh-pad-R*sc/2}" fill="#a49b8c" font-size="10">${fmt(R,0)}</text>
+      <line x1="${pad}" y1="${Hh-pad}" x2="${pad+showN*G*sc}" y2="${Hh-pad-showN*R*sc}" stroke="#a49b8c" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="${pad+4}" y="${Hh-pad-R*sc/2}" fill="#a49b8c" font-size="10">${fmt(R,0)}</text>
       <text x="${pad+G*sc/2}" y="${Hh-pad-R*sc-5}" fill="#a49b8c" font-size="10" text-anchor="middle">${fmt(G,0)}</text>
-      <text x="${W-6}" y="${14}" fill="#a49b8c" font-size="10" text-anchor="end">${showN<n?"앞 "+showN+"단만 표시":n+"단 전체"}</text>
+      <text x="${W-6}" y="14" fill="#a49b8c" font-size="10" text-anchor="end">${showN<n?"앞 "+showN+"단만 표시 (전체 "+n+"단)":n+"단 전체"}</text>
+      <text x="${W-6}" y="${Hh-6}" fill="#d9a05e" font-size="10" text-anchor="end">${fmt(ang,1)}°</text>
     </svg>`;
     show(dia,1);
+
+    // 스트링거 재단 + 자재
+    const topRun=G-ply, botRise=R-ply;
+    let mat="";
+    if(width>0){
+      const treadArea=G*width*treads/1e6, riserArea=R*width*n/1e6;
+      const stringers=width<=1000?3:4;
+      mat=`<div class="res"><div class="hl">자재 산출</div><div class="kvs">`+
+        kv("디딤판(Tread)",treads+" 장 · "+fmt(G,0)+" × "+fmt(width,0)+" mm")+
+        kv("챌판(Riser)",n+" 장 · "+fmt(R,0)+" × "+fmt(width,0)+" mm")+
+        kv("합판 소요 면적",fmt(treadArea+riserArea,2)+" ㎡")+
+        kv("4×8 합판 환산",Math.ceil((treadArea+riserArea)/2.9768)+" 장 (여유 별도)")+
+        kv("스트링거 2×12",stringers+" 개 · 각 "+fmt(Math.ceil((diag+300)/100)*100,0)+" mm 이상")+
+        `</div></div>`;
+    }
+
+    more.innerHTML=
+      `<div class="res"><div class="hl">스트링거 켜는 치수</div>`+
+      `<div class="note" style="border:none;padding:0;margin:0 0 12px">템플릿에 그릴 기본 치수는 <b style="color:var(--accent)">런 ${fmt(G,1)} × 라이즈 ${fmt(R,1)}</b>. 맨 위와 맨 아래만 합판 두께(${fmt(ply,0)}mm)를 빼고 자릅니다.</div>`+
+      `<div class="kvs">`+
+      kv("반복 구간 런",fmt(G,1)+" mm · "+toInch(G))+
+      kv("반복 구간 라이즈",fmt(R,1)+" mm · "+toInch(R))+
+      kv("맨 위(Top) 런 −"+fmt(ply,0),fmt(topRun,1)+" mm · "+toInch(topRun),"acc")+
+      kv("맨 아래(Bottom) 라이즈 −"+fmt(ply,0),fmt(botRise,1)+" mm · "+toInch(botRise),"acc")+
+      (sw>0?kv("노치 후 남은 폭",toInch(throat)+" ("+fmt(throat,0)+"mm)",okT?"good":"warn"):"")+
+      `</div>`+
+      `<div class="note"><b style="color:var(--ink)">왜 ¾″를 빼나</b><br>
+        · 맨 위 런: 마지막 라이즈에 합판이 붙으므로 안 빼면 런이 그만큼 길어집니다<br>
+        · 맨 아래 라이즈: 위쪽 런에 합판이 깔리므로 안 빼면 첫 단이 그만큼 높아집니다</div>`+
+      `</div>`+
+      mat+
+      `<div class="res"><div class="hl">시공 순서 메모</div>`+
+      `<ol class="steps">`+
+      `<li><b>양 옆 스트링거 먼저</b> 벽체에 고정 → 중앙 스트링거 순서. 수평(레벨)을 올려놓고 런·라이즈가 고르게 맞는지 확인</li>`+
+      `<li><b>위쪽은 보막이(Blocking)</b>로 못 고정, <b>아래쪽은 킥보드</b>(2×4 또는 2×6)로 밀림 방지</li>`+
+      `<li><b>라이즈 합판을 먼저</b> 붙이고 런을 나중에. 순서가 반대면 모서리 합판이 튀어나오고 삐걱거립니다</li>`+
+      `<li>목재용 접착제를 바르고 <b>8d 못</b>으로 고정</li>`+
+      `<li>스트링거 옆 스터드 사이에 <b>2×10 보막이</b> 설치 — 석고보드 파손 방지 + 마감 못 자리</li>`+
+      `</ol></div>`;
   }
+  window.__stairCalc=calc;
 })();
 
 /* ══════════ 7. 일당 정산 ══════════ */
@@ -962,14 +1116,6 @@ function cutSteps(W,H,kerf,sheet){
   const U={mm:1,cm:10,m:1000,ja:303.03,chi:30.303,pun:3.0303,in:25.4,ft:304.8};
   $("#un-v").addEventListener("input",calc);
   $("#un-u").addEventListener("change",calc);
-  function inchFrac(inch){
-    const sign=inch<0?"-":""; inch=Math.abs(inch);
-    let whole=Math.floor(inch), f=Math.round((inch-whole)*16), den=16;
-    if(f===16){whole++;f=0;}
-    if(f===0) return sign+whole+'"';
-    while(f%2===0){f/=2;den/=2;}
-    return sign+(whole?whole+" ":"")+f+"/"+den+'"';
-  }
   function calc(){
     const v=num($("#un-v").value), u=$("#un-u").value;
     if(!isFinite(v)){show(res,0);return;}
@@ -988,8 +1134,9 @@ function cutSteps(W,H,kerf,sheet){
       `<tr><td>푼</td><td>${fmt(mm/U.pun,1)} 푼</td></tr>`+
       `<tr><td>자·치·푼</td><td>${combo}</td></tr>`+
       `<tr><td>인치</td><td>${fmt(mm/U.in,3)} in</td></tr>`+
-      `<tr><td>인치 (분수)</td><td>${inchFrac(mm/U.in)}</td></tr>`+
+      `<tr><td>인치 (분수)</td><td>${toInch(mm)}</td></tr>`+
       `<tr><td>피트</td><td>${fmt(mm/U.ft,3)} ft</td></tr>`+
+      `<tr><td>피트-인치</td><td>${toFtIn(mm)}</td></tr>`+
       `</table>`;
     show(res,1);
   }
@@ -1026,8 +1173,9 @@ function cutSteps(W,H,kerf,sheet){
 /* ═══ 시작 ═══ */
 restore();
 route();
-["__triCalc"].forEach(f=>{ if(window[f]) window[f](); });
+$$("select[id]").forEach(el=>el.dispatchEvent(new Event("change",{bubbles:true})));
 $$("input[id],select[id]").forEach(el=>el.dispatchEvent(new Event("input",{bubbles:true})));
+["__triCalc","__stairCalc"].forEach(f=>{ if(window[f]) window[f](); });
 
 if("serviceWorker" in navigator){
   addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
